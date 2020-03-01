@@ -1,80 +1,76 @@
 package val4go
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 )
 
 type Validator struct {
-	schemas []string
-	mux     sync.RWMutex
+	schemas     []string
+	validations []validation
+	sm          sync.RWMutex
+	vm          sync.RWMutex
 }
 
 func New() *Validator {
-	return &Validator{schemas: []string{"val4go"}}
+	return &Validator{
+		schemas: []string{},
+		validations: []validation{
+			{"required", valRequired},
+			{"notblank", valNotBlank},
+		},
+	}
 }
 
 func (v *Validator) RegisterSchema(schema string) {
-	v.mux.Lock()
-	defer v.mux.Unlock()
+	v.sm.Lock()
+	defer v.sm.Unlock()
 
 	v.schemas = append(v.schemas, schema)
 }
 
 func (v *Validator) Validate(schema string, s interface{}) []error {
-	errs := []error(nil)
-
-	v.mux.RLock()
+	v.sm.RLock()
 	schemas := v.schemas
-	v.mux.RUnlock()
+	v.sm.RUnlock()
+
+	v.vm.RLock()
+	validations := v.validations
+	v.vm.RUnlock()
+
+	return validate(validations, schemas, schema, s)
+}
+
+func validate(validations []validation, schemas []string, schema string, s interface{}) []error {
+	errs := []error(nil)
+	val := reflect.ValueOf(s)
 
 	if !contains(schemas, schema) {
 		return errs
 	}
 
-	val := reflect.ValueOf(s)
 	if val.Kind() != reflect.Struct {
 		return errs
 	}
 
 	for i := 0; i < val.NumField(); i++ {
-		fieldInfo := val.Type().Field(i) // a reflect.StructField
-		tag := fieldInfo.Tag             // my_schema:"required"
+		valueField := val.Field(i)
+		typeField := val.Type().Field(i)
 
-		// fmt.Println(tag)
-		// fmt.Println(fieldInfo.Name) // Name
-
-		// a reflect.StructTag
-		name := tag.Get(schema) // required
-		// fmt.Println(name)
+		name := typeField.Tag.Get(schema)
 		if name == "" {
 			continue
 		}
 
-		//todo: check if is a string
-		if name == "required" {
-			s := val.Field(i).String()
-			if s == "" {
-				errs = append(errs, fmt.Errorf("field %s is required", fieldInfo.Name))
+		for _, validation := range validations {
+			if validation.name == name {
+				err := validation.validate(valueField, typeField)
+				if err != nil {
+					errs = append(errs, err)
+				}
 			}
 		}
-
-		if name == "notblank" {
-			s := val.Field(i).String()
-			if strings.TrimSpace(s) == "" {
-				errs = append(errs, fmt.Errorf("field %s must not be blank", fieldInfo.Name))
-			}
-		}
-		// fields[name] = v.Field(i)
 	}
-	// t.Kind()
-	// e := t.Elem()
-	// fmt.Println("------------")
-	// fmt.Println(elem)
-	// // fmt.Println(va.Field(0))
-	// fmt.Println("------------")
 
 	return errs
 }
