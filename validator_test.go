@@ -31,6 +31,29 @@ func TestValidateRequired(t *testing.T) {
 	}
 }
 
+func TestValidateNotBlank(t *testing.T) {
+	type user struct {
+		FirstName string `my_schema:"notblank"`
+	}
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error{errors.New("field FirstName must not be blank")}},
+		{u: user{FirstName: " "}, errs: []error{errors.New("field FirstName must not be blank")}},
+		{u: user{FirstName: "John"}, errs: []error(nil)},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateUnregisteredSchema(t *testing.T) {
 	type user struct {
 		FirstName string `unregistered_schema:"required"`

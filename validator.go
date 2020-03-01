@@ -3,6 +3,7 @@ package val4go
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -60,6 +61,12 @@ func (v *Validator) Validate(schema string, s interface{}) []error {
 			}
 		}
 
+		if name == "notblank" {
+			s := val.Field(i).String()
+			if strings.TrimSpace(s) == "" {
+				errs = append(errs, fmt.Errorf("field %s must not be blank", fieldInfo.Name))
+			}
+		}
 		// fields[name] = v.Field(i)
 	}
 	// t.Kind()
