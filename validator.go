@@ -2,6 +2,7 @@ package val4go
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -63,10 +64,13 @@ func validate(validations []validation, schemas []string, schema string, s inter
 		}
 
 		for _, validation := range validations {
-			if validation.name == name {
-				err := validation.validate(valueField, typeField)
-				if err != nil {
-					errs = append(errs, err)
+			vals := strings.Split(name, ",")
+			for _, val := range vals {
+				if validation.name == strings.TrimSpace(val) {
+					err := validation.validate(valueField, typeField)
+					if err != nil {
+						errs = append(errs, err)
+					}
 				}
 			}
 		}
