@@ -2,6 +2,7 @@ package val4go_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/krstak/testify"
@@ -100,4 +101,27 @@ func TestValidateDifferentSchema(t *testing.T) {
 
 	errs := v.Validate("another_schema", u)
 	testify.Equal(t)([]error(nil), errs)
+}
+
+func TestValidateCustomValidation(t *testing.T) {
+	type user struct {
+		FirstName string `my_schema:"custom"`
+	}
+
+	u := user{FirstName: "John"}
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	errs := v.Validate("my_schema", u)
+	testify.Equal(t)([]error(nil), errs)
+
+	v.RegisterValidation("custom", func(v reflect.Value, s reflect.StructField) error {
+		if v.String() == "John" {
+			return errors.New("john is not valid")
+		}
+		return nil
+	})
+
+	errs = v.Validate("my_schema", u)
+	testify.Equal(t)([]error{errors.New("john is not valid")}, errs)
 }

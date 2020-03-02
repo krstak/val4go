@@ -14,20 +14,29 @@ type Validator struct {
 }
 
 func New() *Validator {
-	return &Validator{
-		schemas: []string{},
-		validations: []validation{
-			{"required", valRequired},
-			{"notblank", valNotBlank},
-		},
+	v := &Validator{
+		schemas:     []string{},
+		validations: make([]validation, 0, 2),
 	}
+
+	v.RegisterValidation("required", valRequired)
+	v.RegisterValidation("notblank", valNotBlank)
+
+	return v
 }
 
 func (v *Validator) RegisterSchema(schema string) {
+	v.vm.Lock()
+	defer v.vm.Unlock()
+
+	v.schemas = append(v.schemas, schema)
+}
+
+func (v *Validator) RegisterValidation(name string, fn func(v reflect.Value, s reflect.StructField) error) {
 	v.sm.Lock()
 	defer v.sm.Unlock()
 
-	v.schemas = append(v.schemas, schema)
+	v.validations = append(v.validations, validation{name, fn})
 }
 
 func (v *Validator) Validate(schema string, s interface{}) []error {
