@@ -55,6 +55,31 @@ func TestValidateNotBlank(t *testing.T) {
 	}
 }
 
+func TestValidateEmail(t *testing.T) {
+	type user struct {
+		Email string `my_schema:"email"`
+	}
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error{errors.New("field Email is not valid email")}},
+		{u: user{Email: "testgmail.com"}, errs: []error{errors.New("field Email is not valid email")}},
+		{u: user{Email: "test@gmail."}, errs: []error{errors.New("field Email is not valid email")}},
+		{u: user{Email: "test@gmail.com"}, errs: []error(nil)},
+		{u: user{Email: "test@gmail"}, errs: []error(nil)},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateMultipleValidations(t *testing.T) {
 	type user struct {
 		FirstName string `my_schema:"required,notblank"`
