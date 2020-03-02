@@ -8,7 +8,7 @@ import (
 
 type V interface {
 	RegisterSchema(string)
-	RegisterValidation(string, func(v reflect.Value, s reflect.StructField) error)
+	RegisterValidation(string, func(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf string) error)
 	Validate(string, interface{}) []error
 }
 
@@ -22,12 +22,13 @@ type validator struct {
 func New() V {
 	v := &validator{
 		schemas:     []string{},
-		validations: make([]validation, 0, 3),
+		validations: make([]validation, 0, 4),
 	}
 
 	v.RegisterValidation("required", valRequired)
 	v.RegisterValidation("notblank", valNotBlank)
 	v.RegisterValidation("email", valEmail)
+	v.RegisterValidation("eq", valCrossEqualField)
 
 	return v
 }
@@ -39,11 +40,11 @@ func (v *validator) RegisterSchema(schema string) {
 	v.schemas = append(v.schemas, schema)
 }
 
-func (v *validator) RegisterValidation(name string, fn func(v reflect.Value, s reflect.StructField) error) {
+func (v *validator) RegisterValidation(name string, fn func(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf string) error) {
 	v.sm.Lock()
 	defer v.sm.Unlock()
 
-	v.validations = append(v.validations, validation{name, fn})
+	v.validations = append(v.validations, validation{name: name, validate: fn})
 }
 
 func (v *validator) Validate(schema string, s interface{}) []error {
@@ -81,11 +82,20 @@ func validate(validations []validation, schemas []string, schema string, s inter
 
 		for _, validation := range validations {
 			vals := strings.Split(name, ",")
-			for _, val := range vals {
-				if validation.name == strings.TrimSpace(val) {
-					err := validation.validate(valueField, typeField)
-					if err != nil {
-						errs = append(errs, err)
+			for _, vld := range vals {
+				if v, f, ok := cross(vld); ok {
+					if validation.name == v {
+						err := validation.validate(valueField, typeField, val, f)
+						if err != nil {
+							errs = append(errs, err)
+						}
+					}
+				} else {
+					if validation.name == strings.TrimSpace(vld) {
+						err := validation.validate(valueField, typeField, val, "")
+						if err != nil {
+							errs = append(errs, err)
+						}
 					}
 				}
 			}
@@ -102,4 +112,12 @@ func contains(vals []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func cross(name string) (string, string, bool) {
+	parts := strings.Split(name, "=")
+	if len(parts) == 2 {
+		return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), true
+	}
+	return "", "", false
 }
