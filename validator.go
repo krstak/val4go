@@ -6,15 +6,21 @@ import (
 	"sync"
 )
 
-type Validator struct {
+type V interface {
+	RegisterSchema(string)
+	RegisterValidation(string, func(v reflect.Value, s reflect.StructField) error)
+	Validate(string, interface{}) []error
+}
+
+type validator struct {
 	schemas     []string
 	validations []validation
 	sm          sync.RWMutex
 	vm          sync.RWMutex
 }
 
-func New() *Validator {
-	v := &Validator{
+func New() V {
+	v := &validator{
 		schemas:     []string{},
 		validations: make([]validation, 0, 2),
 	}
@@ -25,21 +31,21 @@ func New() *Validator {
 	return v
 }
 
-func (v *Validator) RegisterSchema(schema string) {
+func (v *validator) RegisterSchema(schema string) {
 	v.vm.Lock()
 	defer v.vm.Unlock()
 
 	v.schemas = append(v.schemas, schema)
 }
 
-func (v *Validator) RegisterValidation(name string, fn func(v reflect.Value, s reflect.StructField) error) {
+func (v *validator) RegisterValidation(name string, fn func(v reflect.Value, s reflect.StructField) error) {
 	v.sm.Lock()
 	defer v.sm.Unlock()
 
 	v.validations = append(v.validations, validation{name, fn})
 }
 
-func (v *Validator) Validate(schema string, s interface{}) []error {
+func (v *validator) Validate(schema string, s interface{}) []error {
 	v.sm.RLock()
 	schemas := v.schemas
 	v.sm.RUnlock()
