@@ -22,7 +22,7 @@ type validator struct {
 func New() V {
 	v := &validator{
 		schemas:     []string{},
-		validations: make([]validation, 0, 2),
+		validations: make([]validation, 0, 3),
 	}
 
 	v.RegisterValidation("required", valRequired)

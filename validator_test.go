@@ -32,6 +32,28 @@ func TestValidateRequired(t *testing.T) {
 	}
 }
 
+func TestValidateRequiredPtr(t *testing.T) {
+	type user struct {
+		Age *int `my_schema:"required"`
+	}
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error{errors.New("field Age is required")}},
+		{u: user{Age: intP(12)}, errs: []error(nil)},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateNotBlank(t *testing.T) {
 	type user struct {
 		FirstName string `my_schema:"notblank"`
@@ -149,4 +171,8 @@ func TestValidateCustomValidation(t *testing.T) {
 
 	errs = v.Validate("my_schema", u)
 	testify.Equal(t)([]error{errors.New("john is not valid")}, errs)
+}
+
+func intP(x int) *int {
+	return &x
 }
