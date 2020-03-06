@@ -18,7 +18,7 @@ func TestValidateRequired(t *testing.T) {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("field FirstName is required")}},
+		{u: user{}, errs: []error{errors.New("FirstName is required")}},
 		{u: user{FirstName: " "}, errs: []error(nil)},
 		{u: user{FirstName: "John"}, errs: []error(nil)},
 	}
@@ -41,7 +41,7 @@ func TestValidateRequiredPtr(t *testing.T) {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("field Age is required")}},
+		{u: user{}, errs: []error{errors.New("Age is required")}},
 		{u: user{Age: intP(12)}, errs: []error(nil)},
 	}
 
@@ -63,8 +63,8 @@ func TestValidateNotBlank(t *testing.T) {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("field FirstName must not be blank")}},
-		{u: user{FirstName: " "}, errs: []error{errors.New("field FirstName must not be blank")}},
+		{u: user{}, errs: []error{errors.New("FirstName must not be blank")}},
+		{u: user{FirstName: " "}, errs: []error{errors.New("FirstName must not be blank")}},
 		{u: user{FirstName: "John"}, errs: []error(nil)},
 	}
 
@@ -86,9 +86,9 @@ func TestValidateEmail(t *testing.T) {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("field Email is not valid email")}},
-		{u: user{Email: "testgmail.com"}, errs: []error{errors.New("field Email is not valid email")}},
-		{u: user{Email: "test@gmail."}, errs: []error{errors.New("field Email is not valid email")}},
+		{u: user{}, errs: []error{errors.New("Email is not valid email")}},
+		{u: user{Email: "testgmail.com"}, errs: []error{errors.New("Email is not valid email")}},
+		{u: user{Email: "test@gmail."}, errs: []error{errors.New("Email is not valid email")}},
 		{u: user{Email: "test@gmail.com"}, errs: []error(nil)},
 		{u: user{Email: "test@gmail"}, errs: []error(nil)},
 	}
@@ -117,11 +117,11 @@ func TestValidateCrossEqfield(t *testing.T) {
 		{u: user{}, errs: []error(nil)},
 		{u: user{Password: "123", ConfirmationPassword: "123"}, errs: []error(nil)},
 		{u: user{Password: " ", ConfirmationPassword: " "}, errs: []error(nil)},
-		{u: user{Password: "123", ConfirmationPassword: "124"}, errs: []error{errors.New("field Password doesn't match field ConfirmationPassword")}},
-		{u: user{Password: " ", ConfirmationPassword: ""}, errs: []error{errors.New("field Password doesn't match field ConfirmationPassword")}},
-		{u: user{Password: "123", ConfirmationPassword: "12"}, errs: []error{errors.New("field Password doesn't match field ConfirmationPassword")}},
+		{u: user{Password: "123", ConfirmationPassword: "124"}, errs: []error{errors.New("Password doesn't match ConfirmationPassword")}},
+		{u: user{Password: " ", ConfirmationPassword: ""}, errs: []error{errors.New("Password doesn't match ConfirmationPassword")}},
+		{u: user{Password: "123", ConfirmationPassword: "12"}, errs: []error{errors.New("Password doesn't match ConfirmationPassword")}},
 		{u: user{Age: 12, AgeC: 12}, errs: []error(nil)},
-		{u: user{Age: 12, AgeC: 13}, errs: []error{errors.New("field Age doesn't match field AgeC")}},
+		{u: user{Age: 12, AgeC: 13}, errs: []error{errors.New("Age doesn't match AgeC")}},
 	}
 
 	v := val4go.New()
@@ -142,8 +142,8 @@ func TestValidateMultipleValidations(t *testing.T) {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("field FirstName is required"), errors.New("field FirstName must not be blank")}},
-		{u: user{FirstName: " "}, errs: []error{errors.New("field FirstName must not be blank")}},
+		{u: user{}, errs: []error{errors.New("FirstName is required"), errors.New("FirstName must not be blank")}},
+		{u: user{FirstName: " "}, errs: []error{errors.New("FirstName must not be blank")}},
 		{u: user{FirstName: "John"}, errs: []error(nil)},
 	}
 
@@ -170,15 +170,19 @@ func TestValidateUnregisteredSchema(t *testing.T) {
 
 func TestValidateDifferentSchema(t *testing.T) {
 	type user struct {
-		FirstName string `my_schema:"required"`
+		FirstName string `my_schema:"required" another_schema:"notblank"`
 	}
 
-	u := user{}
+	u := user{FirstName: " "}
 	v := val4go.New()
 	v.RegisterSchema("my_schema")
+	v.RegisterSchema("another_schema")
 
-	errs := v.Validate("another_schema", u)
+	errs := v.Validate("my_schema", u)
 	testify.Equal(t)([]error(nil), errs)
+
+	errs = v.Validate("another_schema", u)
+	testify.Equal(t)([]error{errors.New("FirstName must not be blank")}, errs)
 }
 
 func TestValidateCustomValidation(t *testing.T) {
