@@ -102,6 +102,33 @@ func TestValidateEmail(t *testing.T) {
 	}
 }
 
+func TestValidateMinimum(t *testing.T) {
+	type user struct {
+		FirstName string `my_schema:"min=4"`
+		Age       int    `my_schema:"min=18"`
+	}
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error{errors.New("FirstName must be at least 4 characters long"), errors.New("Age must be minimum 18")}},
+		{u: user{FirstName: "Per"}, errs: []error{errors.New("FirstName must be at least 4 characters long"), errors.New("Age must be minimum 18")}},
+		{u: user{FirstName: "John"}, errs: []error{errors.New("Age must be minimum 18")}},
+		{u: user{FirstName: "John", Age: 17}, errs: []error{errors.New("Age must be minimum 18")}},
+		{u: user{FirstName: "John", Age: 18}, errs: []error(nil)},
+		{u: user{FirstName: "Per", Age: 21}, errs: []error{errors.New("FirstName must be at least 4 characters long")}},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateCrossEqfield(t *testing.T) {
 	type user struct {
 		Password             string `my_schema:"eq=ConfirmationPassword"`

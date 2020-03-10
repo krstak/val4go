@@ -28,6 +28,7 @@ func New() V {
 	v.RegisterValidation("required", valRequired)
 	v.RegisterValidation("notblank", valNotBlank)
 	v.RegisterValidation("email", valEmail)
+	v.RegisterValidation("min", valMin)
 	v.RegisterValidation("eq", valCrossEqualField)
 
 	return v

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -35,6 +36,25 @@ func valEmail(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf stri
 
 	if !r.MatchString(vf.String()) {
 		return fmt.Errorf("%s is not valid email", sf.Name)
+	}
+
+	return nil
+}
+
+func valMin(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf string) error {
+	min, err := strconv.Atoi(cf)
+	if err != nil {
+		return err
+	}
+	switch vf.Kind() {
+	case reflect.String:
+		if len(vf.String()) < min {
+			return fmt.Errorf("%s must be at least %s characters long", sf.Name, cf)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if vf.Int() < int64(min) {
+			return fmt.Errorf("%s must be minimum %s", sf.Name, cf)
+		}
 	}
 
 	return nil

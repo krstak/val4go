@@ -46,6 +46,7 @@ errs := v.Validate("signin", usr)
 - reguired
 - notblank
 - email
+- min
 
 ### Cross-field validations:
 - eq=_another-field-name_
