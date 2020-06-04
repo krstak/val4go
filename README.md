@@ -13,8 +13,8 @@ Example: a struct used for both cases, sign up and sign in:
 ```go
 type UserAuth struct {
 	Email                string `signup:"email" signin:"email"`
-	Password             string `signup:"notblank,eq=PasswordConfirmation" signin:"notblank"`
-	PasswordConfirmation string `signup:"notblank"`
+	Password             string `signup:"notempty,eq=PasswordConfirmation" signin:"notempty"`
+	PasswordConfirmation string `signup:"notempty"`
 }
 
 usr := UserAuth{...}
@@ -43,13 +43,64 @@ errs := v.Validate("signin", usr)
 ## Validations
 
 ### Field validations:
-- reguired
-- notblank
-- email
-- min
+
+#### reguired
+
+Only valid for pointers
+```go
+Name *string `signup:"reguired"`
+```
+
+#### notempty
+
+Checks to be non-zero values. Only `string` is supported for now.
+
+If field is a pointer, it checks first to not be nil
+```go
+Name string `signup:"notempty"`
+```
+
+#### email
+
+Checks to be a valid email.
+
+If field is a pointer, it checks first to not be nil
+```go
+Email string `signup:"email"`
+```
+
+#### min
+
+Checks a minimum length/value. 
+
+Only `string`, `int`, `int8`, `int16`, `int32`, `int64` are supported.
+
+If field is a pointer, it checks first to not be nil
+```go
+Name string `signup:"min=4"`
+```
+
+#### max
+
+Checks a maximum length/value. 
+
+Only `string`, `int`, `int8`, `int16`, `int32`, `int64` are supported.
+
+If field is a pointer, it checks first to not be nil
+```go
+Name string `signup:"max=4"`
+```
 
 ### Cross-field validations:
-- eq=_another-field-name_
+
+#### eq
+
+Checks an equality with the cross given field value. 
+
+```go
+Password             string `signup:"eq=PasswordConfirmation"`
+PasswordConfirmation string
+```
 
 ## Custom validations:
 

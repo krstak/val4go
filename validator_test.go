@@ -10,71 +10,32 @@ import (
 )
 
 func TestValidateRequired(t *testing.T) {
-	type user struct {
-		FirstName string `my_schema:"required"`
-	}
-
-	tests := []struct {
-		u    user
-		errs []error
-	}{
-		{u: user{}, errs: []error{errors.New("FirstName is required")}},
-		{u: user{FirstName: " "}, errs: []error(nil)},
-		{u: user{FirstName: "John"}, errs: []error(nil)},
-	}
+	user := struct {
+		FirstName string  `my_schema:"required"`
+		LastName  *string `my_schema:"required"`
+		Age       *int    `my_schema:"required"`
+	}{Age: intPtr(12)}
 
 	v := val4go.New()
 	v.RegisterSchema("my_schema")
 
-	for _, ts := range tests {
-		errs := v.Validate("my_schema", ts.u)
-		testify.Equal(t)(ts.errs, errs)
-	}
+	errs := v.Validate("my_schema", user)
+	testify.Equal(t)([]error{errors.New("LastName is required")}, errs)
 }
 
-func TestValidateRequiredPtr(t *testing.T) {
-	type user struct {
-		Age *int `my_schema:"required"`
-	}
-
-	tests := []struct {
-		u    user
-		errs []error
+func TestValidateNotEmpty(t *testing.T) {
+	user := struct {
+		FirstName string `my_schema:"notempty"`
+		LastName  string `my_schema:"notempty"`
 	}{
-		{u: user{}, errs: []error{errors.New("Age is required")}},
-		{u: user{Age: intP(12)}, errs: []error(nil)},
+		FirstName: "John",
 	}
 
 	v := val4go.New()
 	v.RegisterSchema("my_schema")
 
-	for _, ts := range tests {
-		errs := v.Validate("my_schema", ts.u)
-		testify.Equal(t)(ts.errs, errs)
-	}
-}
-
-func TestValidateNotBlank(t *testing.T) {
-	type user struct {
-		FirstName string `my_schema:"notblank"`
-	}
-
-	tests := []struct {
-		u    user
-		errs []error
-	}{
-		{u: user{}, errs: []error{errors.New("FirstName must not be blank")}},
-		{u: user{FirstName: " "}, errs: []error{errors.New("FirstName must not be blank")}},
-		{u: user{FirstName: "John"}, errs: []error(nil)},
-	}
-
-	v := val4go.New()
-	v.RegisterSchema("my_schema")
-
-	for _, ts := range tests {
-		errs := v.Validate("my_schema", ts.u)
-		testify.Equal(t)(ts.errs, errs)
-	}
+	errs := v.Validate("my_schema", user)
+	testify.Equal(t)([]error{errors.New("LastName must not be empty")}, errs)
 }
 
 func TestValidateEmail(t *testing.T) {
@@ -129,6 +90,32 @@ func TestValidateMinimum(t *testing.T) {
 	}
 }
 
+func TestValidateMaximum(t *testing.T) {
+	type user struct {
+		FirstName string `my_schema:"max=4"`
+		Age       int    `my_schema:"max=18"`
+	}
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error(nil)},
+		{u: user{FirstName: "Johnn", Age: 17}, errs: []error{errors.New("FirstName must be at most 4 characters long")}},
+		{u: user{FirstName: "Johnn", Age: 18}, errs: []error{errors.New("FirstName must be at most 4 characters long")}},
+		{u: user{FirstName: "Johnn", Age: 20}, errs: []error{errors.New("FirstName must be at most 4 characters long"), errors.New("Age must be maximum 18")}},
+		{u: user{FirstName: "Pern", Age: 21}, errs: []error{errors.New("Age must be maximum 18")}},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateCrossEqfield(t *testing.T) {
 	type user struct {
 		Password             string `my_schema:"eq=ConfirmationPassword"`
@@ -162,16 +149,17 @@ func TestValidateCrossEqfield(t *testing.T) {
 
 func TestValidateMultipleValidations(t *testing.T) {
 	type user struct {
-		FirstName string `my_schema:"required,notblank"`
+		Age int `my_schema:"min=18,max=19"`
 	}
 
 	tests := []struct {
 		u    user
 		errs []error
 	}{
-		{u: user{}, errs: []error{errors.New("FirstName is required"), errors.New("FirstName must not be blank")}},
-		{u: user{FirstName: " "}, errs: []error{errors.New("FirstName must not be blank")}},
-		{u: user{FirstName: "John"}, errs: []error(nil)},
+		{u: user{Age: 17}, errs: []error{errors.New("Age must be minimum 18")}},
+		{u: user{Age: 18}, errs: []error(nil)},
+		{u: user{Age: 19}, errs: []error(nil)},
+		{u: user{Age: 20}, errs: []error{errors.New("Age must be maximum 19")}},
 	}
 
 	v := val4go.New()
@@ -181,6 +169,7 @@ func TestValidateMultipleValidations(t *testing.T) {
 		errs := v.Validate("my_schema", ts.u)
 		testify.Equal(t)(ts.errs, errs)
 	}
+
 }
 
 func TestValidateUnregisteredSchema(t *testing.T) {
@@ -197,10 +186,10 @@ func TestValidateUnregisteredSchema(t *testing.T) {
 
 func TestValidateDifferentSchema(t *testing.T) {
 	type user struct {
-		FirstName string `my_schema:"required" another_schema:"notblank"`
+		FirstName string `my_schema:"min=1" another_schema:"min=3"`
 	}
 
-	u := user{FirstName: " "}
+	u := user{FirstName: "M"}
 	v := val4go.New()
 	v.RegisterSchema("my_schema")
 	v.RegisterSchema("another_schema")
@@ -209,7 +198,7 @@ func TestValidateDifferentSchema(t *testing.T) {
 	testify.Equal(t)([]error(nil), errs)
 
 	errs = v.Validate("another_schema", u)
-	testify.Equal(t)([]error{errors.New("FirstName must not be blank")}, errs)
+	testify.Equal(t)([]error{errors.New("FirstName must be at least 3 characters long")}, errs)
 }
 
 func TestValidateCustomValidation(t *testing.T) {
@@ -235,6 +224,6 @@ func TestValidateCustomValidation(t *testing.T) {
 	testify.Equal(t)([]error{errors.New("john is not valid")}, errs)
 }
 
-func intP(x int) *int {
+func intPtr(x int) *int {
 	return &x
 }

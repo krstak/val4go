@@ -22,13 +22,14 @@ type validator struct {
 func New() V {
 	v := &validator{
 		schemas:     []string{},
-		validations: make([]validation, 0, 4),
+		validations: make([]validation, 0, 6),
 	}
 
 	v.RegisterValidation("required", valRequired)
-	v.RegisterValidation("notblank", valNotBlank)
+	v.RegisterValidation("notempty", valNotEmpty)
 	v.RegisterValidation("email", valEmail)
 	v.RegisterValidation("min", valMin)
+	v.RegisterValidation("max", valMax)
 	v.RegisterValidation("eq", valCrossEqualField)
 
 	return v
