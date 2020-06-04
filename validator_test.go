@@ -11,16 +11,20 @@ import (
 
 func TestValidateRequired(t *testing.T) {
 	user := struct {
-		FirstName string  `my_schema:"required"`
-		LastName  *string `my_schema:"required"`
-		Age       *int    `my_schema:"required"`
-	}{Age: intPtr(12)}
+		FirstName string            `my_schema:"required"`
+		LastName  *string           `my_schema:"required"`
+		Age       *int              `my_schema:"required"`
+		Books     []string          `my_schema:"required"`
+		Numbers   []string          `my_schema:"required"`
+		Books2    map[string]string `my_schema:"required"`
+		Numbers2  map[string]string `my_schema:"required"`
+	}{Age: intPtr(12), Numbers: []string{}, Numbers2: make(map[string]string)}
 
 	v := val4go.New()
 	v.RegisterSchema("my_schema")
 
 	errs := v.Validate("my_schema", user)
-	testify.Equal(t)([]error{errors.New("LastName is required")}, errs)
+	testify.Equal(t)([]error{errors.New("LastName is required"), errors.New("Books is required"), errors.New("Books2 is required")}, errs)
 }
 
 func TestValidateNotEmpty(t *testing.T) {

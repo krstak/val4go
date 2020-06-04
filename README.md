@@ -46,14 +46,15 @@ errs := v.Validate("signin", usr)
 
 #### reguired
 
-Only valid for pointers
+Checks to not be nil
+Only `pointers`, `slice` and `map` are supported.
 ```go
 Name *string `signup:"reguired"`
 ```
 
 #### notempty
 
-Checks to be non-zero values. Only `string` is supported for now.
+Checks to be non-zero values. Only `string` is supported.
 
 If field is a pointer, it checks first to not be nil
 ```go

@@ -14,7 +14,11 @@ type validation struct {
 }
 
 func valRequired(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf string) error {
-	if vf.Kind() == reflect.Ptr && vf.IsNil() {
+	kind := vf.Kind()
+
+	ptr := kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map
+
+	if ptr && vf.IsNil() {
 		return fmt.Errorf("%s is required", sf.Name)
 	}
 
