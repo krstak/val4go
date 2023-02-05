@@ -92,6 +92,14 @@ If field is a pointer, it checks first to not be nil
 Name string `signup:"max=4"`
 ```
 
+#### date
+
+Checks if it's an iso date.
+
+```go
+Date string `signup:"date"`
+```
+
 ### Cross-field validations:
 
 #### eq

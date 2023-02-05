@@ -120,6 +120,34 @@ func TestValidateMaximum(t *testing.T) {
 	}
 }
 
+func TestValidateDate(t *testing.T) {
+	type user struct {
+		Date  string  `my_schema:"date"`
+		Date2 *string `my_schema:"date"`
+	}
+
+	date2 := "2021-05-01"
+
+	tests := []struct {
+		u    user
+		errs []error
+	}{
+		{u: user{}, errs: []error(nil)},
+		{u: user{Date: "2021-13-01"}, errs: []error{errors.New("Date is not valid date")}},
+		{u: user{Date: "2021-11-32"}, errs: []error{errors.New("Date is not valid date")}},
+		{u: user{Date: "02/12/2020"}, errs: []error{errors.New("Date is not valid date")}},
+		{u: user{Date: "2021-12-01", Date2: &date2}, errs: []error(nil)},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	for _, ts := range tests {
+		errs := v.Validate("my_schema", ts.u)
+		testify.Equal(t)(ts.errs, errs)
+	}
+}
+
 func TestValidateCrossEqfield(t *testing.T) {
 	type user struct {
 		Password             string `my_schema:"eq=ConfirmationPassword"`

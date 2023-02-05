@@ -30,6 +30,7 @@ func New() V {
 	v.RegisterValidation("email", valEmail)
 	v.RegisterValidation("min", valMin)
 	v.RegisterValidation("max", valMax)
+	v.RegisterValidation("date", valDate)
 	v.RegisterValidation("eq", valCrossEqualField)
 
 	return v

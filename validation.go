@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type validation struct {
@@ -125,6 +126,26 @@ func valCrossEqualField(vf reflect.Value, sf reflect.StructField, v reflect.Valu
 	if !reflect.DeepEqual(vf.Interface(), reflect.Indirect(v).FieldByName(cf).Interface()) {
 		return fmt.Errorf("%s doesn't match %s", sf.Name, cf)
 	}
+	return nil
+}
+
+func valDate(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf string) error {
+	date := vf.String()
+	if date == "" {
+		return nil
+	}
+
+	kind := vf.Kind()
+	if kind == reflect.Ptr && vf.IsNil() {
+		return nil
+	}
+
+	_, valuefield := value(vf)
+
+	if _, err := time.Parse("2006-01-02", valuefield.String()); err != nil {
+		return fmt.Errorf("%s is not valid date", sf.Name)
+	}
+
 	return nil
 }
 
