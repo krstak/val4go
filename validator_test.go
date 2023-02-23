@@ -27,7 +27,7 @@ func TestValidateRequired(t *testing.T) {
 	testify.Equal(t)([]error{errors.New("LastName is required"), errors.New("Books is required"), errors.New("Books2 is required")}, errs)
 }
 
-func TestValidateNotEmpty(t *testing.T) {
+func TestValidateNotEmpty_String(t *testing.T) {
 	user := struct {
 		FirstName string `my_schema:"notempty"`
 		LastName  string `my_schema:"notempty"`
@@ -40,6 +40,22 @@ func TestValidateNotEmpty(t *testing.T) {
 
 	errs := v.Validate("my_schema", user)
 	testify.Equal(t)([]error{errors.New("LastName must not be empty")}, errs)
+}
+
+func TestValidateNotEmpty_Slice(t *testing.T) {
+	user := struct {
+		Hobbies []string `my_schema:"notempty"`
+		Jobs    []string `my_schema:"notempty"`
+	}{
+		Hobbies: []string{"Football", "Basketball"},
+		Jobs:    []string{},
+	}
+
+	v := val4go.New()
+	v.RegisterSchema("my_schema")
+
+	errs := v.Validate("my_schema", user)
+	testify.Equal(t)([]error{errors.New("Jobs must not be empty")}, errs)
 }
 
 func TestValidateEmail(t *testing.T) {

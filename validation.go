@@ -39,6 +39,10 @@ func valNotEmpty(vf reflect.Value, sf reflect.StructField, v reflect.Value, cf s
 		if strings.TrimSpace(valuefield.String()) == "" {
 			return fmt.Errorf("%s must not be empty", sf.Name)
 		}
+	case reflect.Slice:
+		if valuefield.Len() == 0 {
+			return fmt.Errorf("%s must not be empty", sf.Name)
+		}
 	}
 
 	return nil
